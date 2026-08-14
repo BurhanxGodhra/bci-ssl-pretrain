@@ -1,0 +1,26 @@
+# Core ML
+torch>=2.6.0
+torchvision
+torchaudio
+
+# EEG / BCI
+mne>=1.8.0
+moabb>=1.1.1
+pyriemann>=0.7
+
+# Classical ML / Eval
+scikit-learn>=1.5.2
+umap-learn>=0.5.6
+
+# Data & Utils
+numpy>=1.26.4
+scipy>=1.14.1
+pandas>=2.2.3
+pyyaml>=6.0.2
+
+# Visualization
+matplotlib>=3.9.2
+seaborn>=0.13.2
+
+# Reproducibility / Experiment tracking
+tqdm>=4.66.5
