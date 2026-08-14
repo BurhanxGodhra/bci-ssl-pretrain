@@ -1,9 +1,0 @@
-checkpoints
-configs
-data
-notebooks
-results
-scripts
-src
-tests
-venv
