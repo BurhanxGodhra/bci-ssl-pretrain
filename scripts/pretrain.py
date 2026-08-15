@@ -181,7 +181,7 @@ def train_multi(
         history.append(avg_loss)
         print(f"[epoch {epoch+1}/{epochs}] avg_loss={avg_loss:.4f} ({time.time()-t0:.1f}s)")
 
-    ckpt_path = CHECKPOINT_DIR / "encoder_multi_bnci_physionet.pt"
+    ckpt_path = CHECKPOINT_DIR / f"encoder_multi_full_e{epochs}.pt"
     torch.save({
         "encoder_state_dict": model.encoder.state_dict(),
         "n_channels": n_channels, "n_timepoints": n_timepoints,
