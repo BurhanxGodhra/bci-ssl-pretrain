@@ -10,6 +10,9 @@ from src.data.loaders import EEGEpochs
 from src.data.splits import load_split
 from src.augmentations.eeg_augment import build_default_pipeline
 
+from src.data.loaders import DATASET_REGISTRY
+from src.data.splits import get_or_create_split
+
 
 class PretrainContrastiveDataset(Dataset):
     def __init__(self, epochs: EEGEpochs, seed: int = 42):
@@ -17,7 +20,10 @@ class PretrainContrastiveDataset(Dataset):
         epochs: full EEGEpochs object (may include ALL subjects loaded from disk)
         seed:   base seed; each trial gets a derived, distinct augmentation stream
         """
-        split = load_split(epochs.dataset_name)
+        split = get_or_create_split(
+           epochs.dataset_name,
+           all_subjects=DATASET_REGISTRY[epochs.dataset_name]["subjects"],
+        )
         pretrain_subjects = set(split["pretrain_subjects"])
 
         keep_mask = np.isin(epochs.subject_ids, list(pretrain_subjects))

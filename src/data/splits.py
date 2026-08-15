@@ -55,3 +55,9 @@ def load_split(dataset_name: str) -> Dict:
         )
     with open(path) as f:
         return json.load(f)
+
+def get_or_create_split(dataset_name, all_subjects, n_holdout: int = 2, seed: int = 42):
+    try:
+        return load_split(dataset_name)
+    except FileNotFoundError:
+        return create_split(dataset_name, all_subjects, n_holdout=n_holdout, seed=seed)

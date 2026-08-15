@@ -1,0 +1,18 @@
+{
+  "dataset_name": "physionet_mi",
+  "seed": 42,
+  "pretrain_subjects": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    8,
+    9,
+    10
+  ],
+  "holdout_subjects": [
+    6,
+    7
+  ]
+}
