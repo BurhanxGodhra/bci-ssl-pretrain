@@ -48,8 +48,10 @@ def train(
     print(f"Device: {device}")
 
     # --- Data ---
+    from src.data.channel_utils import align_epochs
     raw_epochs = load_dataset(dataset_key, subjects=subjects)
-    train_ds = PretrainContrastiveDataset(raw_epochs, seed=seed)
+    aligned_epochs = align_epochs([raw_epochs])[0]  # normalize even single-dataset runs
+    train_ds = PretrainContrastiveDataset(aligned_epochs, seed=seed)
     loader = DataLoader(
         train_ds, batch_size=batch_size, shuffle=True,
         drop_last=True,  # NT-Xent needs consistent batch size for pos/neg indexing
@@ -106,7 +108,7 @@ def train(
         print(f"[epoch {epoch+1}/{epochs}] avg_loss={avg_loss:.4f} ({elapsed:.1f}s)\n")
 
     # Save encoder only (discard projection head)
-    ckpt_path = CHECKPOINT_DIR / f"encoder_{dataset_key}.pt"
+    ckpt_path = CHECKPOINT_DIR / f"encoder_{dataset_key}_only_e{epochs}.pt"
     torch.save({
         "encoder_state_dict": model.encoder.state_dict(),
         "n_channels": n_channels,

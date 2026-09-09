@@ -96,8 +96,13 @@ def load_dataset(
     session_key = list(info.keys())[0]
     run_key = list(info[session_key].keys())[0]
     raw = info[session_key][run_key]
-    channel_names = raw.info["ch_names"]
-
+    channel_names = raw.copy().pick("eeg").info["ch_names"]  # EEG-only, matches X's actual channel dim
+    
+    assert len(channel_names) == X.shape[1], (
+        f"Channel name count ({len(channel_names)}) doesn't match X's channel "
+        f"dimension ({X.shape[1]}) -- MOABB paradigm channel selection may have "
+        f"changed; investigate before trusting downstream channel alignment."
+    )
     print(
         f"[{dataset_key}] Done. X={X.shape}, "
         f"classes={unique_labels}, subjects={sorted(set(subject_ids))}"
