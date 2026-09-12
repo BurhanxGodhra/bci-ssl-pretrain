@@ -11,10 +11,11 @@ import matplotlib.pyplot as plt
 def plot_fewshot_comparison(
     linear_probe_json: str,
     finetune_json: str,
-    random_control: dict,      # {k: accuracy} -- from the random-encoder control run
+    random_control: dict,
     riemannian_accuracy: float,
     chance_level: float,
     out_path: str,
+    fusion_results: dict = None,   # NEW: {k: accuracy}
     title: str = "Few-Shot MI Classification: Method Comparison (BNCI2014_001)",
 ):
     with open(linear_probe_json) as f:
@@ -30,6 +31,11 @@ def plot_fewshot_comparison(
     rand_means = [random_control[k] for k in k_values]
 
     fig, ax = plt.subplots(figsize=(9, 6))
+
+    if fusion_results:
+        fusion_means = [fusion_results[k] for k in k_values]
+        ax.plot(k_values, fusion_means, marker="D", linewidth=2.5,
+                label="SSL + Riemannian Fusion", color="#7c3aed", zorder=5)
 
     ax.errorbar(k_values, lp_means, yerr=lp_stds, marker="o", capsize=4,
                 label="Pretrained + Linear Probe", linewidth=2, color="#2563eb")
