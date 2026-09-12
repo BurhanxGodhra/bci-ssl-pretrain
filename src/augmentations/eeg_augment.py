@@ -128,3 +128,17 @@ def build_default_pipeline(sfreq: float = 250.0, seed: int = None) -> ComposeAug
         ],
         seed=seed,
     )
+
+def build_gentle_pipeline(sfreq: float = 250.0, seed: int = None) -> ComposeAugmentations:
+    """Weaker augmentation pipeline -- tests whether the original
+    (build_default_pipeline) was destroying MI-relevant signal, not just
+    nuisance variation."""
+    return ComposeAugmentations(
+        [
+            SpatialChannelDropout(max_drop_fraction=0.10, p=0.25),
+            TemporalJitter(max_shift_samples=15, p=0.25),
+            FrequencyBandMasking(sfreq=sfreq, max_mask_hz=2.0, p=0.25),
+            GaussianNoiseInjection(noise_std_fraction=0.03, p=0.25),
+        ],
+        seed=seed,
+    )

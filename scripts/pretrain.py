@@ -42,6 +42,8 @@ def train(
     temperature: float = 0.5,
     embed_dim: int = 128,
     seed: int = 42,
+    use_cosine_schedule: bool = True,
+    pipeline_builder=None,
 ):
     torch.manual_seed(seed)
     device = get_device()
@@ -51,7 +53,9 @@ def train(
     from src.data.channel_utils import align_epochs
     raw_epochs = load_dataset(dataset_key, subjects=subjects)
     aligned_epochs = align_epochs([raw_epochs])[0]  # normalize even single-dataset runs
-    train_ds = PretrainContrastiveDataset(aligned_epochs, seed=seed)
+    from src.augmentations.eeg_augment import build_default_pipeline
+    builder = pipeline_builder or build_default_pipeline
+    train_ds = PretrainContrastiveDataset(aligned_epochs, seed=seed, pipeline_builder=builder)
     loader = DataLoader(
         train_ds, batch_size=batch_size, shuffle=True,
         drop_last=True,  # NT-Xent needs consistent batch size for pos/neg indexing
@@ -68,7 +72,12 @@ def train(
 
     total_steps = epochs * len(loader)
     warmup_steps = int(0.1 * total_steps)
-    scheduler = build_warmup_cosine_scheduler(optimizer, warmup_steps, total_steps)
+    if use_cosine_schedule:
+        scheduler = build_warmup_cosine_scheduler(optimizer, warmup_steps, total_steps)
+    else:
+        def flat_lr_lambda(step):
+            return min(1.0, step / max(1, warmup_steps))
+        scheduler = LambdaLR(optimizer, flat_lr_lambda)
 
     CHECKPOINT_DIR.mkdir(exist_ok=True)
     history = []
@@ -108,7 +117,7 @@ def train(
         print(f"[epoch {epoch+1}/{epochs}] avg_loss={avg_loss:.4f} ({elapsed:.1f}s)\n")
 
     # Save encoder only (discard projection head)
-    ckpt_path = CHECKPOINT_DIR / f"encoder_{dataset_key}_only_e{epochs}.pt"
+    ckpt_path = CHECKPOINT_DIR / f"encoder_{dataset_key}_only_e{epochs}_flat_gentleaug.pt"
     torch.save({
         "encoder_state_dict": model.encoder.state_dict(),
         "n_channels": n_channels,
