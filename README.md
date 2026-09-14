@@ -8,7 +8,13 @@
 
 A self-supervised pretraining pipeline for subject-independent motor imagery EEG decoding, built to answer one specific question: can contrastive pretraining across many subjects' EEG reduce the labeled-calibration burden a new user faces before a motor-imagery BCI becomes usable? Built as a full engineering exercise — pretraining, a rigorous classical baseline, few-shot evaluation, and two working applications — with an honest account of which interventions actually moved the needle and which didn't.
 
-**Further reading:** [`ARCHITECTURE.md`](ARCHITECTURE.md) (system design, data flow, model details) · [`BENCHMARKS.md`](BENCHMARKS.md) (every experiment run, including the ones that didn't work)
+**Further reading:**
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (system design, data flow, model details) ·
+[`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) (every experiment run, including the ones that didn't work) ·
+[`docs/PROJECT_NARRATIVE.md`](docs/PROJECT_NARRATIVE.md) (the full build story, in order) ·
+[`docs/decisions.md`](docs/decisions.md) (engineering decision log) ·
+[`docs/EXTERNAL_REVIEW.md`](docs/EXTERNAL_REVIEW.md) (self-conducted critical review) ·
+[`docs/flow.md`](docs/flow.md) (data/process flow diagrams)
 
 ## What this is
 
@@ -18,6 +24,7 @@ A self-supervised pretraining pipeline for subject-independent motor imagery EEG
 - An honest account of three negative results (dataset combination, LR schedule tuning, more pretraining subjects) that did **not** improve accuracy, and the one intervention (feature fusion) that did
 - Two working Streamlit applications: a consumer-facing **Device Setup Wizard** (real or simulated LSL streaming, guided calibration, live testing) and an engineer-facing **Benchmarking Lab** (multi-dataset comparison, custom dataset upload, minimum-calibration-trial finder)
 - A verified ONNX export of the pretrained encoder, with numerical parity confirmed against the PyTorch original
+- Pretrained checkpoints published on [Releases](https://github.com/BurhanxGodhra/bci-ssl-pretrain/releases/tag/v1.0) — no need to re-run pretraining to explore the apps
 
 ## What this is not
 
@@ -65,13 +72,29 @@ graph TD
 
 ## Screenshots
 
-**Device Setup Wizard** — guided cue-by-cue calibration against a real or simulated LSL stream
+**Landing page** — three applications built on the same validated pipeline
 
-*(add screenshot: `docs/assets/device_wizard.png`)*
+![Main landing page](docs/assets/main.png)
 
-**Benchmarking Lab** — minimum-calibration-trial finder, multi-dataset comparison
+**Benchmark Demo** — few-shot calibration on a real held-out test subject
 
-*(add screenshot: `docs/assets/benchmarking_lab.png`)*
+![Benchmark Demo](docs/assets/benchmark_down.png)
+
+**Device Setup Wizard** — connect a real or simulated EEG device via LSL
+
+![Device Setup Wizard, Step 1](docs/assets/setup_wizard.png)
+
+**Live Test** — honest, independently-cued accuracy reporting after calibration
+
+![Live Test results](docs/assets/live_test.png)
+
+**Benchmarking Lab** — minimum-calibration-trial finder across one or more datasets
+
+![Benchmarking Lab configuration](docs/assets/benchmarking_lab.png)
+
+**Custom dataset upload** — exact channel-identity validation against the encoder's fixed montage
+
+![Custom dataset upload form](docs/assets/data_sources.png)
 
 ## Results
 
@@ -85,7 +108,7 @@ graph TD
 | **Pretrained + Riemannian fusion** | **58.2%** | **80.4%** | **10.7 min** |
 | Riemannian baseline (full data) | 72.3% | 100% | 76.8 min |
 
-Fusing the frozen SSL embedding with Riemannian tangent-space features reaches 80.4% of full-calibration accuracy using 80 labeled trials (~10.7 minutes) instead of 576 trials (~76.8 minutes) — an 86% reduction in required calibration time. This was not the first thing we tried; see `BENCHMARKS.md` for the three approaches that didn't work before this one did.
+Fusing the frozen SSL embedding with Riemannian tangent-space features reaches 80.4% of full-calibration accuracy using 80 labeled trials (~10.7 minutes) instead of 576 trials (~76.8 minutes) — an 86% reduction in required calibration time. This was not the first thing we tried; see [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) for the three approaches that didn't work before this one did.
 
 ### Cross-dataset consistency (SSL + Riemannian fusion)
 
@@ -96,7 +119,7 @@ Fusing the frozen SSL embedding with Riemannian tangent-space features reaches 8
 | 10 | 52.1% | 48.3% |
 | 20 | 58.0% | 53.1% |
 
-PhysionetMI tracks 4-5 points below BNCI2014_001 at every k — consistent with PhysionetMI's own, noisier classical baseline (67.6% ± 18.1% vs. BNCI's 72.3% ± 8.4%). Full per-subject breakdowns, every negative result, and the methodology behind each number are in `BENCHMARKS.md`.
+PhysionetMI tracks 4-5 points below BNCI2014_001 at every k — consistent with PhysionetMI's own, noisier classical baseline (67.6% ± 18.1% vs. BNCI's 72.3% ± 8.4%). Full per-subject breakdowns, every negative result, and the methodology behind each number are in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
 
 ## Setup
 
@@ -109,13 +132,19 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-**Before first run**, pretrain the encoder (this populates `checkpoints/`, which is gitignored and not shipped in the repo):
+**Before first run**, get a pretrained encoder — either download one (no training required), or pretrain your own:
 
 ```bash
-python scripts/pretrain.py    # multi-dataset pretraining; ~7-15 minutes on Apple Silicon MPS
+mkdir -p checkpoints
+# Download from https://github.com/BurhanxGodhra/bci-ssl-pretrain/releases/tag/v1.0
+# and place the .pt file(s) directly inside checkpoints/
 ```
 
-Or download a pretrained checkpoint from the [Releases](../../releases) page.
+Or pretrain from scratch (~7-15 minutes on Apple Silicon MPS):
+
+```bash
+python scripts/pretrain.py
+```
 
 ## Running the system
 
@@ -123,56 +152,60 @@ Or download a pretrained checkpoint from the [Releases](../../releases) page.
 streamlit run app/main.py
 ```
 
-Launches the landing page with links to the **Benchmark Demo**, **Device Setup Wizard**, and **Benchmarking Lab** — all in one app, no separate terminals needed.
+Launches the landing page with links to the **Benchmark Demo**, **Device Setup Wizard**, and **Benchmarking Lab** — all in one app, no separate terminals needed for the app itself (though keeping a separate terminal for git/pip commands avoids the stale-process issues documented in [`docs/decisions.md`](docs/decisions.md), D-012).
 
 ## Project Structure
 
+```
 bci-ssl-pretrain/
 ├── app/
-│ ├── main.py # Landing page, multi-page navigation
-│ └── pages/
-│ ├── 1_Benchmark_Demo.py # Held-out subject few-shot demo
-│ ├── 2_Device_Setup_Wizard.py # Consumer LSL connect -> calibrate -> test flow
-│ └── 3_Benchmarking_Lab.py # Multi-dataset comparison, custom upload
+│   ├── main.py                    # Landing page, multi-page navigation
+│   └── pages/
+│       ├── 1_Benchmark_Demo.py    # Held-out subject few-shot demo
+│       ├── 2_Device_Setup_Wizard.py  # Consumer LSL connect -> calibrate -> test flow
+│       └── 3_Benchmarking_Lab.py  # Multi-dataset comparison, custom upload
 ├── src/
-│ ├── data/ # MOABB loaders, subject-split leakage firewall, channel alignment, custom-upload validation
-│ ├── augmentations/ # EEG-specific contrastive augmentations
-│ ├── models/ # EEGNet encoder, projection head, linear probe head
-│ ├── losses/ # NT-Xent contrastive loss
-│ ├── baselines/ # Riemannian tangent-space classical baseline
-│ ├── finetune/ # k-shot sampler, linear probe, full fine-tune, SSL+Riemannian fusion
-│ ├── streaming/ # LSL utilities (real device scan + simulated replay outlet)
-│ ├── analysis/ # Calibration-time framing
-│ ├── visualization/ # Embedding diagnostics, performance curves, subject heatmap
-│ └── utils/ # Device resolution, seeding
+│   ├── data/           # MOABB loaders, subject-split leakage firewall, channel alignment, custom-upload validation
+│   ├── augmentations/  # EEG-specific contrastive augmentations
+│   ├── models/          # EEGNet encoder, projection head, linear probe head
+│   ├── losses/            # NT-Xent contrastive loss
+│   ├── baselines/          # Riemannian tangent-space classical baseline
+│   ├── finetune/            # k-shot sampler, linear probe, full fine-tune, SSL+Riemannian fusion
+│   ├── streaming/            # LSL utilities (real device scan + simulated replay outlet)
+│   ├── analysis/               # Calibration-time framing
+│   ├── visualization/           # Embedding diagnostics, performance curves, subject heatmap
+│   └── utils/                     # Device resolution, seeding
 ├── scripts/
-│ ├── pretrain.py # Single- and multi-dataset pretraining entrypoints
-│ └── export_onnx.py # ONNX export + numerical parity verification
-├── tests/ # Every experiment script referenced in BENCHMARKS.md
-├── data/splits/ # Committed subject-split manifests (leakage audit trail)
-├── results/ # Saved metrics/plots from validated experiments
-├── checkpoints/ # Trained encoders (gitignored, regenerated via scripts/pretrain.py)
+│   ├── pretrain.py       # Single- and multi-dataset pretraining entrypoints
+│   └── export_onnx.py    # ONNX export + numerical parity verification
+├── tests/                # Every experiment script referenced in docs/BENCHMARKS.md
+├── data/splits/           # Committed subject-split manifests (leakage audit trail)
+├── results/                # Saved metrics/plots from validated experiments
+├── docs/                     # Architecture, benchmarks, decision log, narrative, review, flow diagrams, screenshots
+├── checkpoints/              # Trained encoders (gitignored, regenerated or downloaded via Releases)
 └── requirements.txt
+```
 
-
-**Note:** `data/raw/`, `data/processed/`, `checkpoints/`, and `venv/` are intentionally excluded from version control — they're regenerated by running the scripts above, not shipped as static files.
+**Note:** `data/raw/`, `data/processed/`, `checkpoints/`, and `venv/` are intentionally excluded from version control — they're regenerated by running the scripts above, or downloaded from Releases, not shipped as static files in the repo itself.
 
 ## Limitations
 
 Structural constraints, not resolved by more engineering time alone:
 
 - **No real headset tested** — the Device Setup Wizard's LSL pipeline is real and verified, but only against a replay outlet streaming recorded research data, never live electrodes.
-- **Vanilla contrastive pretraining has a real ceiling** — three independent interventions (more pretraining subjects, flat vs. cosine LR schedule, augmentation strength) all converged to the same 45-47% band at k=20. This is not a hyperparameter we haven't found; see `BENCHMARKS.md` for the full negative-result sequence.
+- **Vanilla contrastive pretraining has a real ceiling** — three independent interventions (more pretraining subjects, flat vs. cosine LR schedule, augmentation strength) all converged to the same 45-47% band at k=20. This is not a hyperparameter we haven't found; see [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) for the full negative-result sequence.
 - **Fusion requires the Riemannian feature computation at inference time**, not just the frozen encoder — meaningfully more compute than a pure embedding lookup, though still fast at k≤20 sample sizes.
 - **Fixed 22-channel montage** — the encoder's spatial weights are tied to specific electrode identities learned during pretraining; a device with a substantially different channel layout is not compatible without retraining (the Benchmarking Lab's upload validator enforces this explicitly rather than silently failing).
 - **Class taxonomies don't merge across datasets** — BNCI2014_001 and PhysionetMI have different class sets; evaluation is always scoped to one dataset's taxonomy at a time, even when the underlying encoder was pretrained across both (unsupervised pretraining doesn't have this constraint; supervised evaluation does).
+- **Small holdout set (2 subjects/dataset)** — reported few-shot numbers are means over 2 held-out subjects, not a population-level claim; see [`docs/EXTERNAL_REVIEW.md`](docs/EXTERNAL_REVIEW.md) for a fuller discussion of statistical scope.
 
 ## Engineering Roadmap
 
 1. **Real hardware validation.** The LSL ingestion path is built and tested against a replay outlet; the natural next step is validating the full wizard flow against an actual consumer EEG device.
 2. **Broader montage support.** Generalizing beyond the fixed 22-channel requirement — likely via a channel-adaptive encoder architecture — would materially widen which devices the Benchmarking Lab's custom-upload path can actually evaluate.
 3. **A metric-learning objective beyond vanilla NT-Xent.** Given that plain contrastive pretraining plateaued regardless of scale/schedule/augmentation, a supervised-contrastive or prototypical-network objective (using pretrain-subject labels, which are available and currently unused) is a more promising lever than further vanilla-SSL tuning.
-4. **Test suite.** Experiment scripts in `tests/` currently serve as the verification record for every claim in `BENCHMARKS.md`; converting the core ones (leakage firewall, ONNX parity, channel-alignment correctness) into an automated CI suite would catch regressions the way manual verification occasionally missed them mid-project (see the EOG/STI channel bug and the MNE_DATA config issue, both caught only because a downstream check failed loudly).
+4. **Larger, split-diversified holdout evaluation.** Repeating the pipeline across several different random holdout splits (not just one fixed 2-subject split per dataset) would tighten the confidence around every reported number.
+5. **Test suite.** Experiment scripts in `tests/` currently serve as the verification record for every claim in `docs/BENCHMARKS.md`; converting the core ones (leakage firewall, ONNX parity, channel-alignment correctness) into an automated CI suite would catch regressions the way manual verification occasionally missed them mid-project (see [`docs/decisions.md`](docs/decisions.md) for the EOG/STI channel bug and the MNE_DATA config issue, both caught only because a downstream check failed loudly).
 
 ## Citations
 
