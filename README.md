@@ -146,6 +146,15 @@ Or pretrain from scratch (~7-15 minutes on Apple Silicon MPS):
 python scripts/pretrain.py
 ```
 
+### Troubleshooting
+
+If you use conda and see a package "working" that isn't actually listed in `requirements.txt`, or conversely see `command not found` for something that should be installed, deactivate conda's base environment before activating this project's venv — having both active at once lets PATH silently resolve to whichever environment happens to have a package installed, which can mask a genuinely missing dependency:
+
+```bash
+conda deactivate
+source venv/bin/activate
+```
+
 ## Running the system
 
 ```bash
