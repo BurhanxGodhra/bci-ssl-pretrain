@@ -25,3 +25,7 @@ seaborn>=0.13.2
 # Reproducibility / Experiment tracking
 tqdm>=4.66.5
 pylsl>=1.16.0
+streamlit
+onnx
+onnxruntime
+onnxscript
