@@ -4,8 +4,8 @@ held-out subject data and our validated pretrained encoder + linear probe.
 """
 import streamlit as st
 import numpy as np
-import torch
 
+from pathlib import Path
 from src.data.loaders import load_dataset
 from src.data.splits import load_split
 from src.finetune.linear_probe_eval import (
@@ -13,7 +13,7 @@ from src.finetune.linear_probe_eval import (
 )
 from src.finetune.fewshot_sampler import sample_k_shot_split
 from src.utils.device import get_device
-from src.analysis.calibration_time import k_to_time, N_CLASSES
+from src.analysis.calibration_time import k_to_time
 
 st.set_page_config(page_title="Few-Shot BCI Calibration Demo", layout="centered")
 
@@ -25,11 +25,21 @@ st.markdown(
     "(never seen during pretraining) — this is not synthetic."
 )
 
+CHECKPOINT_PATH = "checkpoints/encoder_multi_full_e25.pt"
+
+if not Path(CHECKPOINT_PATH).exists():
+    st.error(
+        f"Checkpoint not found at `{CHECKPOINT_PATH}`. Download it from the "
+        f"[v1.0 Release](https://github.com/BurhanxGodhra/bci-ssl-pretrain/releases/tag/v1.0) "
+        f"and place it inside `checkpoints/`, or train it yourself via `scripts/pretrain.py`."
+    )
+    st.stop()
+
 device = get_device()
 
 @st.cache_resource
 def load_resources():
-    encoder = load_pretrained_encoder("checkpoints/encoder_multi_full_e25.pt", device)
+    encoder = load_pretrained_encoder(CHECKPOINT_PATH, device)
     split = load_split("bnci2014_001")
     holdout_subjects = split["holdout_subjects"]
     epochs = load_dataset("bnci2014_001", subjects=holdout_subjects)
