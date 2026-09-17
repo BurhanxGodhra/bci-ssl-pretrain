@@ -51,8 +51,9 @@ def train(
 
     # --- Data ---
     from src.data.channel_utils import align_epochs
+    from src.data.custom_dataset import REQUIRED_CHANNELS
     raw_epochs = load_dataset(dataset_key, subjects=subjects)
-    aligned_epochs = align_epochs([raw_epochs])[0]  # normalize even single-dataset runs
+    aligned_epochs = align_epochs([raw_epochs], force_channels=REQUIRED_CHANNELS)[0]  # normalize even single-dataset runs
     from src.augmentations.eeg_augment import build_default_pipeline
     builder = pipeline_builder or build_default_pipeline
     train_ds = PretrainContrastiveDataset(aligned_epochs, seed=seed, pipeline_builder=builder)

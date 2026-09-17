@@ -38,9 +38,13 @@ def align_channels(epochs_list: List[EEGEpochs]) -> List[EEGEpochs]:
         print(f"  {e.dataset_name}: {e.X.shape[1]} -> {X_sub.shape[1]} channels")
     return aligned
 
-def align_epochs(epochs_list: List[EEGEpochs]) -> List[EEGEpochs]:
-    common = find_common_channels([e.channel_names for e in epochs_list])
-    print(f"[align_epochs] Common channels ({len(common)}): {common}")
+def align_epochs(epochs_list, force_channels: list = None):
+    if force_channels:
+        common = force_channels
+        print(f"[align_epochs] Forced common channels ({len(common)}): {common}")
+    else:
+        common = find_common_channels([e.channel_names for e in epochs_list])
+        print(f"[align_epochs] Common channels ({len(common)}): {common}")
 
     min_timepoints = min(e.X.shape[2] for e in epochs_list)
     lengths = {e.dataset_name: e.X.shape[2] for e in epochs_list}

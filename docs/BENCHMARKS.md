@@ -164,3 +164,42 @@ Trial timing: 4s imagery window + 2s cue + 2s rest = 8s/trial (BNCI2014_001 prot
 ## Reproducing these numbers
 
 Every table above corresponds to a script in `tests/`. The naming convention follows the experiment: `test_phaseN_*.py` for the phased build, `test_accuracy_sprint_*.py` for the negative-result sequence, `test_fusion_*.py` for the winning method. Random seeds are fixed throughout (`seed=42` base, with derived per-draw seeds for k-shot sampling) — re-running should reproduce these numbers within the small noise band reported alongside each mean.
+
+
+## Audit-response experiments
+
+Following a self-conducted critical review (see `docs/EXTERNAL_REVIEW.md`), four targeted experiments were run to directly test specific unresolved concerns.
+
+### Subject-ID probe
+
+Frozen embeddings (both datasets combined, 10 subjects total) fed into a 5-fold cross-validated Logistic Regression predicting subject identity:
+
+| Metric | Value |
+|---|---|
+| Chance level (10 subjects) | 10.0% |
+| Mean accuracy | 69.3% ± 1.4% |
+| Fold scores | 0.687, 0.709, 0.670, 0.700, 0.701 |
+
+**This is a genuine, significant finding**: the frozen embedding space carries substantial exploitable subject-identity information — far above chance, tight variance across folds. This is a stronger, more direct test than the earlier UMAP/silhouette investigation, which measured unsupervised pairwise distance structure and found near-zero global subject signal (-0.06 to -0.08). The two results are not contradictory: a trained linear probe can find separating structure that unsupervised distance metrics don't surface. The practical implication: the encoder learns a mixture of motor-imagery-relevant and subject-identity-relevant structure, and the k-shot fusion results reported elsewhere in this document have not been decomposed to isolate how much of the observed accuracy gain depends on each. This is an open limitation, not yet resolved.
+
+### Cross-dataset transfer (SSL + Riemannian fusion, both directions)
+
+| k | Pretrain=BNCI→Eval=PhysionetMI | Within-dataset reference | Pretrain=PhysionetMI→Eval=BNCI | Within-dataset reference |
+|---|---|---|---|---|
+| 1 | 29.2% | 30.2% | 38.3% | 37.7% |
+| 5 | 42.1% | 42.0% | 46.9% | 47.8% |
+| 10 | 48.7% | 48.3% | 51.7% | 52.1% |
+| 20 | 52.8% | 53.1% | 57.9% | 58.0% |
+
+Both directions land within ~1pt of the within-dataset reference at every k. An encoder that never saw a single subject from the evaluation dataset during pretraining performs essentially identically to one trained including that dataset — strong evidence the learned representation generalizes across genuinely disjoint EEG hardware, montages, and subject pools, not just within one dataset's own idiosyncrasies.
+
+### Random-init vs. SSL-init (controlled, same architecture/subjects/fine-tuning procedure)
+
+| k | SSL-init | Random-init | Delta |
+|---|---|---|---|
+| 1 | 34.3% | 28.4% | +5.9 |
+| 5 | 38.6% | 32.6% | +6.0 |
+| 10 | 39.6% | 35.1% | +4.5 |
+| 20 | 40.4% | 35.0% | +5.4 |
+
+A consistent ~5-6pt gain from SSL pretraining as weight initialization, isolated from every other confound. This is the cleanest, most direct evidence that pretraining itself contributes real value beyond architecture and beyond the random-weight floor established earlier.

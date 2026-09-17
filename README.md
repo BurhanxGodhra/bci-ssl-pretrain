@@ -110,16 +110,19 @@ graph TD
 
 Fusing the frozen SSL embedding with Riemannian tangent-space features reaches 80.4% of full-calibration accuracy using 80 labeled trials (~10.7 minutes) instead of 576 trials (~76.8 minutes) — an 86% reduction in required calibration time. This was not the first thing we tried; see [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) for the three approaches that didn't work before this one did.
 
-### Cross-dataset consistency (SSL + Riemannian fusion)
 
-| k | BNCI2014_001 | PhysionetMI |
+### Cross-dataset generalization
+
+Beyond evaluating each dataset independently, an encoder pretrained on only *one* dataset was evaluated few-shot on the *other* dataset's fully disjoint holdout subjects — a genuine transfer test, not just independent per-dataset evaluation:
+
+| k | BNCI→PhysionetMI transfer | PhysionetMI→BNCI transfer |
 |---|---|---|
-| 1 | 37.7% | 30.2% |
-| 5 | 47.8% | 42.0% |
-| 10 | 52.1% | 48.3% |
-| 20 | 58.0% | 53.1% |
+| 1 | 29.2% (within-dataset: 30.2%) | 38.3% (within-dataset: 37.7%) |
+| 5 | 42.1% (within-dataset: 42.0%) | 46.9% (within-dataset: 47.8%) |
+| 10 | 48.7% (within-dataset: 48.3%) | 51.7% (within-dataset: 52.1%) |
+| 20 | 52.8% (within-dataset: 53.1%) | 57.9% (within-dataset: 58.0%) |
 
-PhysionetMI tracks 4-5 points below BNCI2014_001 at every k — consistent with PhysionetMI's own, noisier classical baseline (67.6% ± 18.1% vs. BNCI's 72.3% ± 8.4%). Full per-subject breakdowns, every negative result, and the methodology behind each number are in [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md).
+Both directions land within ~1pt of the within-dataset reference at every k, in a self-conducted audit response documented in full in `docs/BENCHMARKS.md`.
 
 ## Setup
 
@@ -207,6 +210,7 @@ Structural constraints, not resolved by more engineering time alone:
 - **Fixed 22-channel montage** — the encoder's spatial weights are tied to specific electrode identities learned during pretraining; a device with a substantially different channel layout is not compatible without retraining (the Benchmarking Lab's upload validator enforces this explicitly rather than silently failing).
 - **Class taxonomies don't merge across datasets** — BNCI2014_001 and PhysionetMI have different class sets; evaluation is always scoped to one dataset's taxonomy at a time, even when the underlying encoder was pretrained across both (unsupervised pretraining doesn't have this constraint; supervised evaluation does).
 - **Small holdout set (2 subjects/dataset)** — reported few-shot numbers are means over 2 held-out subjects, not a population-level claim; see [`docs/EXTERNAL_REVIEW.md`](docs/EXTERNAL_REVIEW.md) for a fuller discussion of statistical scope.
+- **Embeddings carry exploitable subject-identity information** — a linear probe predicts subject identity from frozen embeddings at 69.3% accuracy (10% chance floor). This coexists with, and is a stronger test than, the earlier finding of near-zero unsupervised subject clustering (UMAP/silhouette). The project has not yet decomposed how much of the reported few-shot accuracy depends on this versus genuine motor-imagery-relevant structure — see `docs/BENCHMARKS.md` and `docs/decisions.md` (D-019) for full detail.
 
 ## Engineering Roadmap
 
